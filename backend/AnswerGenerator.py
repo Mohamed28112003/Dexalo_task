@@ -1,8 +1,8 @@
 from typing import List, Any
 from LLMProvider import LLMProvider
+
 from langchain.schema import Document
 from PromptManager import PromptManager
-
 
 class AnswerGenerator:
     """Class for generating answers from retrieved documents"""

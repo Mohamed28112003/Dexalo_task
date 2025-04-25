@@ -1,9 +1,9 @@
 from typing import List, Optional, Dict, Any
 from ChromaDBManager import ChromaDBManager
 from AnswerGenerator import AnswerGenerator
-from langchain.schema import Document
 from LLMProvider import LLMProvider
 from PromptManager import PromptManager
+from langchain.schema import Document
 
 
 class RAGPipelineManager:

@@ -1,7 +1,8 @@
 from langchain_chroma import Chroma
 from langchain.schema import Document
 from typing import List
-from EmbeddingProvider import EmbeddingProvider
+from EmbeddingProvider import EmbeddingProvider 
+
 from typing import Optional
 
 
