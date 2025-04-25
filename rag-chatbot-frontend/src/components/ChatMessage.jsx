@@ -17,17 +17,14 @@ const ChatMessage = ({ message }) => {
   );
 };
 
-// Simple markdown-like formatting for code blocks
 const formatContent = (content) => {
   if (!content) return '';
   
-  // Format code blocks
   let formattedContent = content.replace(
     /```([\s\S]*?)```/g,
     '<pre><code>$1</code></pre>'
   );
   
-  // Format line breaks
   formattedContent = formattedContent.replace(/\n/g, '<br>');
   
   return formattedContent;

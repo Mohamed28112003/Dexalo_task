@@ -12,7 +12,6 @@ function DocumentUpload({ onUploadComplete, onClose }) {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
-    // Reset file input value to allow selecting the same file again
     e.target.value = null;
   };
 

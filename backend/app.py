@@ -12,22 +12,18 @@ from pathlib import Path
 import time
 from dotenv import load_dotenv
 
-# Import your RAG pipeline components
 from TextProcessor import TextProcessor
 from ChromaDBManager import ChromaDBManager
 from LLMProvider import LLMProvider
 from PromptManager import PromptManager
 from RAGPipelineManager import RAGPipelineManager
 
-# Import MathAgent
 from agent import MathAgent
 
-# Load environment variables
 load_dotenv()
 
 app = FastAPI(title="RAG and Math API", description="API for document RAG pipeline and mathematical calculations")
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,7 +32,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Define models
 class QueryRequest(BaseModel):
     query: str
 
@@ -54,19 +49,15 @@ class MathResponse(BaseModel):
     result: str
     processing_time: float
 
-# Global variables
 DOCS_DIRECTORY = os.getenv("docs_directory")
 DB_DIRECTORY = os.getenv("db_directory")
 ALLOWED_EXTENSIONS = {"txt", "pdf"}
 
-# Ensure directories exist
 Path(DOCS_DIRECTORY).mkdir(parents=True, exist_ok=True)
 Path(DB_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
-# Initialize RAG pipeline - will be rebuilt when new files are added
 rag_pipeline = None
 
-# Initialize Math Agent
 math_agent = MathAgent()
 
 def file_extension_is_valid(filename: str) -> bool:
@@ -106,18 +97,15 @@ async def upload_files(files: List[UploadFile] = File(...)):
     for file in files:
         if not file_extension_is_valid(file.filename):
             raise HTTPException(status_code=400, detail=f"File {file.filename} has an invalid extension. Allowed: {ALLOWED_EXTENSIONS}")
-        
-        # Create a unique filename to avoid conflicts
-        #unique_filename = f"{uuid.uuid4()}_{file.filename}"
+
         file_path = os.path.join(DOCS_DIRECTORY, file.filename)
-        
-        # Save the file
+       
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
         uploaded_files.append(file.filename)
     
-    # Rebuild RAG pipeline with new files
+    
     rag_pipeline = build_rag_pipeline()
     
     return JSONResponse(
@@ -137,7 +125,7 @@ async def query_documents(request: QueryRequest):
     result = rag_pipeline.process_query(request.query)
     processing_time = time.time() - start_time
     
-    # Extract source information if available
+    
     sources = []
     if "sources" in result:
         sources = result["sources"]
@@ -183,7 +171,7 @@ async def delete_document(filename: str):
     
     file_path.unlink()
     
-    # Rebuild RAG pipeline after deletion
+   
     global rag_pipeline
     if any(Path(DOCS_DIRECTORY).iterdir()):
         rag_pipeline = build_rag_pipeline()
@@ -199,12 +187,12 @@ async def delete_all_documents():
         if file_path.is_file():
             file_path.unlink()
     
-    # Reset RAG pipeline
+    
     global rag_pipeline
     rag_pipeline = None
     
     return {"message": "All documents deleted successfully"}
 
-# Run the application
+
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

@@ -14,10 +14,8 @@ class SafeCalculator:
         
     def _preprocess_natural_language(self, query: str) -> str:
         """Convert natural language math questions into symbolic expressions."""
-        # Normalize spacing
         query = query.lower().strip()
         
-        # Remove common question prefixes
         prefixes = [
             "what is ", "what's ", "calculate ", "compute ", "find ", "what would be ",
             "can you tell me ", "tell me ", "solve ", "evaluate "
@@ -27,21 +25,15 @@ class SafeCalculator:
                 query = query[len(prefix):]
                 break
         
-        # Handle "the square root of X" patterns
         sqrt_pattern = r"(?:the\s+)?square\s+root\s+of\s+(.+?)(?:\?|$|\s+[a-zA-Z])"
         sqrt_match = re.search(sqrt_pattern, query)
         if sqrt_match:
             inner_expr = sqrt_match.group(1).strip()
-            # If the inner expression contains operations, parse it first
             if any(op in inner_expr for op in ["+", "-", "*", "/", "^"]):
                 query = query.replace(sqrt_match.group(0), f"sqrt({inner_expr})")
             else:
                 query = query.replace(sqrt_match.group(0), f"sqrt({inner_expr})")
-        
-        # Handle other function patterns (similar logic can be extended)
-        # For example: "log of X", "sine of X", etc.
-        
-        # Replace verbal operators with symbols
+
         replacements = [
             (r"\bplus\b", "+"),
             (r"\bminus\b", "-"),
@@ -56,10 +48,8 @@ class SafeCalculator:
         for pattern, replacement in replacements:
             query = re.sub(pattern, replacement, query)
         
-        # Extract just the math expression by removing trailing punctuation and text
         query = re.sub(r"[?!]", "", query)
         
-        # Final cleanup - remove any remaining non-math related words
         expression_chars = set("0123456789+-*/()^.sqrtlogsincostan ")
         cleaned_expr = ''.join(c for c in query if c in expression_chars)
         
@@ -68,21 +58,17 @@ class SafeCalculator:
     def evaluate(self, expression: str) -> str:
         """Evaluates mathematical expressions, including natural language inputs."""
         try:
-            # First, try to parse natural language
             if not expression.strip().replace('.', '').isdigit() and any(c.isalpha() for c in expression):
                 cleaned_expr = self._preprocess_natural_language(expression)
             else:
                 cleaned_expr = expression
                 
-            # Remove spaces for symbolic processing
             cleaned_expr = re.sub(r'\s+', '', cleaned_expr)
             
-            # Validate the cleaned expression
             if not re.match(r'^[0-9+\-*/().^sqrtlogsincostan]+$', cleaned_expr):
                 return f"Invalid expression: '{cleaned_expr}'. Please use numbers and operators (+, -, *, /, ^, sqrt, log, sin, cos, tan)."
             
             try:
-                # Try with sympy first - best for mathematical accuracy
                 expr = cleaned_expr.replace('^', '**')
                 expr = expr.replace('sqrt(', 'sp.sqrt(')
                 expr = re.sub(r'\blog\(', 'sp.log10(', expr)
@@ -93,14 +79,12 @@ class SafeCalculator:
                 result = sp.sympify(expr).evalf(10)
                 return str(float(result))
             except Exception as e:
-                # Fallback to asteval
                 try:
                     result = self.a_eval(cleaned_expr)
                     if isinstance(result, (int, float)):
                         return str(result)
                     raise ValueError(f"Evaluation failed: {e}")
                 except Exception:
-                    # Last resort - try Python's eval with safety wrapper
                     return self.repl.run(f"print({cleaned_expr})")
                 
         except Exception as e:
@@ -108,7 +92,7 @@ class SafeCalculator:
 
 
 class MathAgent:
-    def __init__(self, temperature: float = 0.1):  # Lower temperature for more consistent responses
+    def __init__(self, temperature: float = 0.1):  
         self.llm = OpenAI(temperature=temperature)
         self.calculator = SafeCalculator()
         self.tool = self._create_tool()
@@ -151,10 +135,10 @@ class MathAgent:
 
     def run(self, query: str):
         try:
-            # First try to run through the agent
+            
             return self.agent.run(query)
         except Exception as e:
-            # Fallback to direct calculator if agent fails
+            
             try:
                 result = self.calculator.evaluate(query)
                 return f"Result: {result}"
