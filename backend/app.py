@@ -19,10 +19,13 @@ from LLMProvider import LLMProvider
 from PromptManager import PromptManager
 from RAGPipelineManager import RAGPipelineManager
 
+# Import MathAgent
+from agent import MathAgent
+
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="RAG API", description="API for document RAG pipeline")
+app = FastAPI(title="RAG and Math API", description="API for document RAG pipeline and mathematical calculations")
 
 # Add CORS middleware
 app.add_middleware(
@@ -43,6 +46,14 @@ class QueryResponse(BaseModel):
     sources: List[str] = []
     processing_time: float
 
+class MathRequest(BaseModel):
+    expression: str
+
+class MathResponse(BaseModel):
+    expression: str
+    result: str
+    processing_time: float
+
 # Global variables
 DOCS_DIRECTORY = os.getenv("docs_directory")
 DB_DIRECTORY = os.getenv("db_directory")
@@ -54,6 +65,9 @@ Path(DB_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
 # Initialize RAG pipeline - will be rebuilt when new files are added
 rag_pipeline = None
+
+# Initialize Math Agent
+math_agent = MathAgent()
 
 def file_extension_is_valid(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -94,14 +108,14 @@ async def upload_files(files: List[UploadFile] = File(...)):
             raise HTTPException(status_code=400, detail=f"File {file.filename} has an invalid extension. Allowed: {ALLOWED_EXTENSIONS}")
         
         # Create a unique filename to avoid conflicts
-        unique_filename = f"{uuid.uuid4()}_{file.filename}"
-        file_path = os.path.join(DOCS_DIRECTORY, unique_filename)
+        #unique_filename = f"{uuid.uuid4()}_{file.filename}"
+        file_path = os.path.join(DOCS_DIRECTORY, file.filename)
         
         # Save the file
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        uploaded_files.append(unique_filename)
+        uploaded_files.append(file.filename)
     
     # Rebuild RAG pipeline with new files
     rag_pipeline = build_rag_pipeline()
@@ -134,6 +148,24 @@ async def query_documents(request: QueryRequest):
         sources=sources,
         processing_time=round(processing_time, 2)
     )
+
+@app.post("/math", response_model=MathResponse)
+async def calculate_math(request: MathRequest):
+    """Process mathematical calculations using MathAgent"""
+    global math_agent
+    
+    start_time = time.time()
+    try:
+        result = math_agent.run(request.expression)
+        processing_time = time.time() - start_time
+        
+        return MathResponse(
+            expression=request.expression,
+            result=result,
+            processing_time=round(processing_time, 2)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing mathematical expression: {str(e)}")
 
 @app.get("/documents")
 async def list_documents():

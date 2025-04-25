@@ -89,3 +89,25 @@ export const deleteAllDocuments = async () => {
   }
 };
 
+
+
+export const calculateMath = async (expression) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/math`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ expression }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to process math expression');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API error:', error);
+      throw error;
+    }
+  };
